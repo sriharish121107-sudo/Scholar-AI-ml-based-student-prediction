@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Intervention Center - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold text-dark">Academic Intervention Center</h1>
+    <div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addInterventionModal">
+            <i class="bi bi-bookmark-plus-fill"></i> Log New Intervention
+        </button>
+    </div>
+</div>
+
+<!-- Intervention Log Cards and Registry -->
+<div class="card-premium p-4 mb-4 border-0">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <h5 class="fw-bold mb-0 text-dark-emphasis"><i class="bi bi-list-task me-2 text-primary"></i>Active Intervention Log</h5>
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" id="statusFilter" style="width: 160px;" onchange="filterInterventions()">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Follow-up Required">Follow-up Required</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="table-responsive-premium">
+        <table class="table table-premium align-middle mb-0 text-center">
+            <thead>
+                <tr>
+                    <th class="text-start ps-4">Created Date</th>
+                    <th>Student ID</th>
+                    <th>Performance Category</th>
+                    <th>Support Category</th>
+                    <th class="text-start">Teacher Notes</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="interventionsTableBody">
+                <!-- Injected dynamically via API -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Log New Intervention -->
+<div class="modal fade" id="addInterventionModal" tabindex="-1" aria-labelledby="addNotifLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium border-0">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title fw-bold" id="addNotifLabel"><i class="bi bi-bookmark-plus me-2 text-primary"></i>Log New Intervention Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addInterventionForm" onsubmit="submitNewIntervention(event)">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="student_id" placeholder="e.g. S-014" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Support Category</label>
+                        <select class="form-select" id="category" required>
+                            <option value="" disabled selected>Select category...</option>
+                            <option value="Academic Support">Academic Support (Tutoring)</option>
+                            <option value="Attendance Monitoring">Attendance Monitoring</option>
+                            <option value="Assignment Support">Assignment Support</option>
+                            <option value="Mentoring">Teacher Mentoring</option>
+                            <option value="Study Plan">Structured Study Plan</option>
+                            <option value="Parental Follow-up">Parent/Guardian Follow-up</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Teacher Notes</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Define intervention timeline, study goals, or discussion records..."></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" required>
+                                <option value="Pending" selected>Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Follow-up Required">Follow-up Required</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="follow_up_date" class="form-label">Follow-up Date</label>
+                            <input type="date" class="form-control" id="follow_up_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-premium">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Update Existing Intervention Status -->
+<div class="modal fade" id="updateInterventionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium border-0">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Intervention Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="updateInterventionForm" onsubmit="submitUpdateIntervention(event)">
+                <input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-student-id">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" class="form-control bg-light" id="edit-student-display" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-notes" class="form-label">Update Teacher Notes</label>
+                        <textarea class="form-control" id="edit-notes" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-status" class="form-label">Intervention Status</label>
+                        <select class="form-select" id="edit-status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Follow-up Required">Follow-up Required</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-premium">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Update Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let rawInterventions = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadInterventions();
+    });
+
+    function loadInterventions() {
+        fetch("/api/interventions")
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                rawInterventions = data.interventions;
+                renderInterventions(rawInterventions);
+            }
+        })
+        .catch(err => console.error("Error loading interventions:", err));
+    }
+
+    function renderInterventions(list) {
+        const tbody = document.getElementById("interventionsTableBody");
+        tbody.innerHTML = "";
+        
+        if (list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-secondary">
+                        <i class="bi bi-bookmark-check-fill empty-state-icon d-block mb-3"></i>
+                        No intervention records logged. Click <strong>Log New Intervention</strong> to create one.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        list.forEach(item => {
+            // Status styling
+            let badgeClass = "badge-custom bg-secondary text-dark";
+            if (item.status === "Completed") badgeClass = "badge-custom badge-high";
+            else if (item.status === "In Progress") badgeClass = "badge-custom badge-average";
+            else if (item.status === "Follow-up Required" || item.status === "Pending") badgeClass = "badge-custom badge-risk";
+
+            // Risk category styling
+            let riskBadge = "";
+            if (item.predicted_category === "High") {
+                riskBadge = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-8">High</span>`;
+            } else if (item.predicted_category === "Average") {
+                riskBadge = `<span class="badge bg-warning-subtle text-warning-dark border border-warning-subtle px-2 py-1 fs-8">Average</span>`;
+            } else {
+                riskBadge = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fs-8">At-Risk</span>`;
+            }
+
+            const row = `
+                <tr>
+                    <td class="text-start ps-4 text-secondary">${item.created_at.substring(0, 16)}</td>
+                    <td class="fw-bold"><a href="/student/${item.student_id}" class="text-decoration-none">${item.student_id}</a></td>
+                    <td>${riskBadge}</td>
+                    <td class="fw-semibold text-dark-emphasis">${item.category}</td>
+                    <td class="text-start text-secondary" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${item.notes || 'No description provided.'}
+                    </td>
+                    <td><span class="${badgeClass}">${item.status}</span></td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="openEditModal(${item.id}, '${item.student_id}', '${item.notes.replace(/'/g, "\\'")}', '${item.status}')">
+                            <i class="bi bi-pencil-square"></i> Status
+                        </button>
+                        <a href="/student/${item.student_id}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-person-fill"></i> Profile
+                        </a>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function filterInterventions() {
+        const val = document.getElementById("statusFilter").value;
+        if (!val) {
+            renderInterventions(rawInterventions);
+        } else {
+            const filtered = rawInterventions.filter(x => x.status === val);
+            renderInterventions(filtered);
+        }
+    }
+
+    function submitNewIntervention(event) {
+        event.preventDefault();
+        
+        const payload = {
+            student_id: document.getElementById("student_id").value,
+            category: document.getElementById("category").value,
+            notes: document.getElementById("notes").value,
+            status: document.getElementById("status").value,
+            follow_up_date: document.getElementById("follow_up_date").value
+        };
+
+        fetch("/api/interventions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Close Modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById("addInterventionModal"));
+                modal.hide();
+                
+                // Clear Form
+                document.getElementById("addInterventionForm").reset();
+                
+                showToast("Intervention plan logged successfully!", "bg-success");
+                loadInterventions();
+            } else {
+                showToast("Failed: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            showToast("Server Connection Error occurred.", "bg-danger");
+            console.error(err);
+        });
+    }
+
+    function openEditModal(id, studentId, notes, status) {
+        document.getElementById("edit-id").value = id;
+        document.getElementById("edit-student-id").value = studentId;
+        document.getElementById("edit-student-display").value = studentId;
+        document.getElementById("edit-notes").value = notes;
+        document.getElementById("edit-status").value = status;
+        
+        const modal = new bootstrap.Modal(document.getElementById("updateInterventionModal"));
+        modal.show();
+    }
+
+    function submitUpdateIntervention(event) {
+        event.preventDefault();
+        
+        const payload = {
+            id: parseInt(document.getElementById("edit-id").value),
+            student_id: document.getElementById("edit-student-id").value,
+            notes: document.getElementById("edit-notes").value,
+            status: document.getElementById("edit-status").value
+        };
+
+        fetch("/api/interventions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById("updateInterventionModal"));
+                modal.hide();
+                
+                showToast("Intervention plan updated successfully!", "bg-success");
+                loadInterventions();
+            } else {
+                showToast("Update failed: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            showToast("Connection Error occurred.", "bg-danger");
+            console.error(err);
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{
+    "train_records": 729,
+    "val_records": 157,
+    "test_records": 157,
+    "features": [
+        "Attendance",
+        "Study_Hours",
+        "Assignment_Completion",
+        "Previous_Grade",
+        "Class_Participation",
+        "Family_Support_High",
+        "Family_Support_Low",
+        "Family_Support_Medium",
+        "Parental_Education_Associate",
+        "Parental_Education_Bachelor",
+        "Parental_Education_High School",
+        "Parental_Education_Master",
+        "Parental_Education_PhD",
+        "Internet_Access_No",
+        "Internet_Access_Yes",
+        "Extra_Activities_No",
+        "Extra_Activities_Yes"
+    ]
+}

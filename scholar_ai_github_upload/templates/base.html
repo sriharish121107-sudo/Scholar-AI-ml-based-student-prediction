@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Scholar AI{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts (Plus Jakarta Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar">
+            <div class="sidebar-logo d-flex align-items-center py-4 px-3 border-bottom border-secondary-subtle">
+                <i class="bi bi-mortarboard-fill fs-3 text-primary me-2"></i>
+                <span class="fs-4 fw-extrabold text-white logo-text" style="font-weight: 800;">Scholar AI</span>
+            </div>
+            
+            <ul class="list-unstyled components">
+                <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard') }}">
+                        <i class="bi bi-grid-1x2-fill me-3"></i> Dashboard
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'predict' %}active{% endif %}">
+                    <a href="{{ url_for('predict') }}">
+                        <i class="bi bi-cpu-fill me-3"></i> Predict Student
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'students' %}active{% endif %}">
+                    <a href="{{ url_for('students') }}">
+                        <i class="bi bi-people-fill me-3"></i> Students Registry
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'dataset_center' %}active{% endif %}">
+                    <a href="{{ url_for('dataset_center') }}">
+                        <i class="bi bi-cloud-arrow-up-fill me-3"></i> Data Center
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'interventions' %}active{% endif %}">
+                    <a href="{{ url_for('interventions') }}">
+                        <i class="bi bi-bookmark-check-fill me-3"></i> Intervention Center
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'history' %}active{% endif %}">
+                    <a href="{{ url_for('history') }}">
+                        <i class="bi bi-clock-history me-3"></i> Prediction History
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'model' %}active{% endif %}">
+                    <a href="{{ url_for('model') }}">
+                        <i class="bi bi-bar-chart-line-fill me-3"></i> Model Analytics
+                    </a>
+                </li>
+                <li class="{% if request.endpoint == 'settings' %}active{% endif %}">
+                    <a href="{{ url_for('settings') }}">
+                        <i class="bi bi-gear-fill me-3"></i> Settings
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer p-3 mt-auto">
+                <div class="db-status-badge p-2 mb-3 rounded text-center" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
+                    {% if db_status == 'ephemeral' %}
+                        <div class="text-warning fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> SQLite (Vercel Ephemeral)
+                        </div>
+                        <span class="text-secondary d-block mt-0.5" style="font-size: 0.65rem; line-height: 1.2;">Data resets on cold start. Configure DATABASE_URL for Postgres.</span>
+                    {% elif db_status == 'postgres' %}
+                        <div class="text-success fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-database-fill-check me-1"></i> Postgres (Persistent)
+                        </div>
+                    {% else %}
+                        <div class="text-info fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-database-fill me-1"></i> SQLite Local Mode
+                        </div>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('logout') }}" class="d-flex align-items-center py-2.5 px-3 rounded text-danger text-decoration-none logout-link fw-bold">
+                    <i class="bi bi-box-arrow-right me-3 fs-5"></i> Logout
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div id="content" class="w-100">
+            <!-- Topbar Navigation -->
+            <nav class="navbar navbar-expand-lg navbar-top py-3 px-4 shadow-sm">
+                <div class="container-fluid p-0">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary d-md-none me-3">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold mb-0 text-dark-emphasis" id="greetingLabel">Good Morning, Teacher 👋</h5>
+                    </div>
+                    
+                    <div class="ms-auto d-flex align-items-center gap-3">
+                        <!-- Date Display -->
+                        <span class="text-secondary small d-none d-lg-inline-block" id="currentDateLabel"></span>
+                        
+                        <!-- Dark / Light Theme Toggle -->
+                        <button type="button" class="theme-toggle-btn" title="Toggle Theme">
+                            <i class="bi bi-moon-stars-fill"></i>
+                        </button>
+                        
+                        <!-- Notification Dropdown -->
+                        <div class="dropdown">
+                            <button type="button" class="theme-toggle-btn position-relative" id="notifBell" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell-fill"></i>
+                                <span class="notification-badge-bell d-none" id="notificationBadge"></span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg py-0 border-0 overflow-hidden" aria-labelledby="notifBell" style="width: 320px; border-radius: 12px; margin-top: 10px;" id="notificationList">
+                                <!-- Injected dynamically via JS -->
+                            </ul>
+                        </div>
+                        
+                        <div class="vr bg-secondary opacity-25 d-none d-sm-block" style="height: 24px;"></div>
+                        
+                        <!-- User Profile Info -->
+                        <div class="d-flex align-items-center gap-2 d-none d-sm-flex">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px; font-size: 0.95rem;">
+                                {{ session.get('username', 'T')[:2].upper() }}
+                            </div>
+                            <div class="text-start">
+                                <span class="d-block small fw-bold text-dark-emphasis">{{ session.get('username', 'Teacher') }}</span>
+                                <span class="text-secondary" style="font-size: 0.725rem;">Instructor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Page Content Content Area -->
+            <main class="p-4" style="flex:1;">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show border-0 mb-4 shadow-sm" role="alert" style="border-radius: 10px;">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="text-center py-4 bg-white border-top mt-auto">
+                <span class="text-secondary small">Scholar AI &bull; <strong>"Predict. Prevent. Improve."</strong> &bull; Performance prediction dashboard &copy; 2026</span>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+        <div id="appToast" class="toast align-items-center text-white border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Global JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Sidebar Mobile Toggle
+        document.getElementById('sidebarCollapse')?.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+
+        // Set top date display and greeting
+        const now = new Date();
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        
+        const dateString = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+        document.getElementById("currentDateLabel").textContent = dateString;
+
+        // Dynamic Greeting
+        const hour = now.getHours();
+        let greeting = "Good Morning, Teacher 👋";
+        if (hour >= 12 && hour < 17) greeting = "Good Afternoon, Teacher 👋";
+        else if (hour >= 17) greeting = "Good Evening, Teacher 👋";
+        document.getElementById("greetingLabel").textContent = greeting;
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

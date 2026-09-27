@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Students Registry - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold text-dark">Students Cohort Registry</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-outline-secondary d-flex align-items-center gap-2 fw-bold" onclick="exportCohortCsv()">
+            <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export Cohort CSV
+        </button>
+    </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="card-premium p-4 mb-4 border-0 shadow-sm">
+    <h6 class="fw-bold mb-3 text-secondary text-uppercase small"><i class="bi bi-funnel-fill me-1 text-primary"></i>Advanced Filter Controls</h6>
+    <div class="row g-3">
+        <!-- Search -->
+        <div class="col-12 col-md-4">
+            <label for="searchBar" class="form-label">Search Student ID</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0 text-secondary"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-start-0" id="searchBar" placeholder="Search by student id..." onkeyup="filterRegistryTable()">
+            </div>
+        </div>
+
+        <!-- Risk filter -->
+        <div class="col-12 col-md-3">
+            <label for="riskFilter" class="form-label">Risk Classification</label>
+            <select class="form-select" id="riskFilter" onchange="filterRegistryTable()">
+                <option value="" {% if not active_category %}selected{% endif %}>All Categories</option>
+                <option value="High" {% if active_category == 'High' %}selected{% endif %}>High Performance</option>
+                <option value="Average" {% if active_category == 'Average' %}selected{% endif %}>Average Performance</option>
+                <option value="At-Risk" {% if active_category == 'At-Risk' %}selected{% endif %}>At-Risk</option>
+            </select>
+        </div>
+
+        <!-- Attendance filter -->
+        <div class="col-12 col-md-3">
+            <label for="attendanceFilter" class="form-label">Attendance Level</label>
+            <select class="form-select" id="attendanceFilter" onchange="filterRegistryTable()">
+                <option value="">All Levels</option>
+                <option value="critical">Critical (< 60%)</option>
+                <option value="warning">Warning (60% - 75%)</option>
+                <option value="normal">Normal (75% - 90%)</option>
+                <option value="excellent">Excellent (> 90%)</option>
+            </select>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="col-12 col-md-2 d-flex align-items-end">
+            <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">Reset Filters</button>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="card-premium p-4 border-0">
+    <div class="table-responsive-premium">
+        <table class="table table-premium align-middle mb-0 text-center" id="registryTable">
+            <thead>
+                <tr>
+                    <th class="text-start ps-4">Student ID</th>
+                    <th>Attendance %</th>
+                    <th>Study Hours / Wk</th>
+                    <th>Assignment completion %</th>
+                    <th>Previous Grade %</th>
+                    <th>Risk Category</th>
+                    <th>Confidence</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if students %}
+                    {% for item in students %}
+                        <tr class="student-row" data-risk="{{ item.predicted_category }}" data-att="{{ item.attendance }}" data-sh="{{ item.study_hours }}">
+                            <td class="text-start ps-4 fw-bold">
+                                <a href="{{ url_for('student_profile', student_id=item.student_id) }}" class="text-decoration-none text-primary">
+                                    {{ item.student_id }}
+                                </a>
+                            </td>
+                            <td>{{ "%.1f"|format(item.attendance) }}%</td>
+                            <td>{{ "%.1f"|format(item.study_hours) }} hrs</td>
+                            <td>{{ "%.1f"|format(item.assignment_completion) }}%</td>
+                            <td>{{ "%.1f"|format(item.previous_grade) }}%</td>
+                            <td>
+                                {% if item.predicted_category == 'High' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 fs-8 uppercase">High</span>
+                                {% elif item.predicted_category == 'Average' %}
+                                    <span class="badge bg-warning-subtle text-warning-dark border border-warning-subtle px-2.5 py-1 fs-8 uppercase">Average</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 fs-8 uppercase">At-Risk</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">{{ "%.1f"|format(item.confidence * 100) }}%</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="triggerIntervention('{{ item.student_id }}')">
+                                    <i class="bi bi-bookmark-plus-fill"></i> Intervene
+                                </button>
+                                <a href="{{ url_for('student_profile', student_id=item.student_id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-person-fill"></i> Profile
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-secondary">
+                            <i class="bi bi-people-fill empty-state-icon d-block mb-3"></i>
+                            No students registered in database.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Log Intervention Modal (Shared) -->
+<div class="modal fade" id="addInterventionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium border-0">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bookmark-plus me-2 text-primary"></i>Log New Intervention</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addInterventionForm" onsubmit="submitQuickIntervention(event)">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="student_id_val" class="form-label">Student ID</label>
+                        <input type="text" class="form-control bg-light" id="student_id_val" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category_val" class="form-label">Support Category</label>
+                        <select class="form-select" id="category_val" required>
+                            <option value="Academic Support" selected>Academic Support (Tutoring)</option>
+                            <option value="Attendance Monitoring">Attendance Monitoring</option>
+                            <option value="Assignment Support">Assignment Support</option>
+                            <option value="Mentoring">Teacher Mentoring</option>
+                            <option value="Study Plan">Structured Study Plan</option>
+                            <option value="Parental Follow-up">Parent/Guardian Follow-up</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes_val" class="form-label">Teacher Notes</label>
+                        <textarea class="form-control" id="notes_val" rows="3" placeholder="Add study logs or targets here..."></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="status_val" class="form-label">Status</label>
+                            <select class="form-select" id="status_val" required>
+                                <option value="Pending" selected>Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="follow_up_val" class="form-label">Follow-up Date</label>
+                            <input type="date" class="form-control" id="follow_up_val">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-premium">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Run on startup
+    document.addEventListener("DOMContentLoaded", function() {
+        filterRegistryTable();
+    });
+
+    function filterRegistryTable() {
+        const search = document.getElementById("searchBar").value.toUpperCase().trim();
+        const risk = document.getElementById("riskFilter").value;
+        const attendance = document.getElementById("attendanceFilter").value;
+
+        const rows = document.querySelectorAll(".student-row");
+
+        rows.forEach(row => {
+            const studentId = row.querySelector("td a").textContent.toUpperCase();
+            const rowRisk = row.getAttribute("data-risk");
+            const rowAtt = parseFloat(row.getAttribute("data-att"));
+            
+            // Flags
+            let matchesSearch = studentId.includes(search);
+            let matchesRisk = !risk || rowRisk === risk;
+            
+            let matchesAtt = true;
+            if (attendance === "critical") matchesAtt = rowAtt < 60;
+            else if (attendance === "warning") matchesAtt = rowAtt >= 60 && rowAtt <= 75;
+            else if (attendance === "normal") matchesAtt = rowAtt > 75 && rowAtt <= 90;
+            else if (attendance === "excellent") matchesAtt = rowAtt > 90;
+
+            if (matchesSearch && matchesRisk && matchesAtt) {
+                row.classList.remove("d-none");
+            } else {
+                row.classList.add("d-none");
+            }
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById("searchBar").value = "";
+        document.getElementById("riskFilter").value = "";
+        document.getElementById("attendanceFilter").value = "";
+        filterRegistryTable();
+        showToast("Filters reset successfully.", "bg-info");
+    }
+
+    function exportCohortCsv() {
+        const search = document.getElementById("searchBar").value.trim();
+        const risk = document.getElementById("riskFilter").value;
+        
+        let url = `/students/export?category=${risk}&search=${search}`;
+        window.location.href = url;
+        showToast("CSV Cohort download started.", "bg-success");
+    }
+
+    function triggerIntervention(studentId) {
+        const modal = new bootstrap.Modal(document.getElementById("addInterventionModal"));
+        document.getElementById("student_id_val").value = studentId;
+        document.getElementById("notes_val").value = "";
+        modal.show();
+    }
+
+    function submitQuickIntervention(event) {
+        event.preventDefault();
+        
+        const payload = {
+            student_id: document.getElementById("student_id_val").value,
+            category: document.getElementById("category_val").value,
+            notes: document.getElementById("notes_val").value,
+            status: document.getElementById("status_val").value,
+            follow_up_date: document.getElementById("follow_up_val").value
+        };
+
+        fetch("/api/interventions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById("addInterventionModal"));
+                modal.hide();
+                showToast("Intervention plan saved successfully!", "bg-success");
+            } else {
+                showToast("Logging failed: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            showToast("Server Connection Error.", "bg-danger");
+            console.error(err);
+        });
+    }
+</script>
+{% endblock %}

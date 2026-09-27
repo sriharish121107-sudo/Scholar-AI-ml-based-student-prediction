@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Predict Performance - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-extrabold text-dark-emphasis mb-0" style="font-weight: 800;">AI Performance Predictor</h1>
+</div>
+
+<div class="row g-4">
+    <!-- Form Panel -->
+    <div class="col-12 col-lg-7">
+        <div class="card card-premium p-4 border-0">
+            <h5 class="fw-bold mb-4 text-dark-emphasis border-bottom pb-2"><i class="bi bi-cpu-fill text-primary me-2"></i>Configure Student Profile</h5>
+            
+            <form id="predictionForm" class="needs-validation" novalidate>
+                <!-- Section 1: Demographics -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <label for="Student_ID" class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="Student_ID" placeholder="e.g. S-1044" required>
+                        <div class="invalid-feedback">Student ID is required.</div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Metrics with interactive sliders -->
+                <h6 class="fw-bold text-secondary mb-3 small text-uppercase">Academic Indicators</h6>
+                <div class="row g-3 mb-4">
+                    <!-- Attendance -->
+                    <div class="col-12">
+                        <label for="Attendance" class="form-label d-flex justify-content-between">
+                            <span>Attendance Rate</span>
+                            <span class="slider-val-badge" id="val-att">80%</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" class="form-range-premium" id="Attendance" min="0" max="100" value="80" oninput="updateSliderVal('Attendance', 'att', '%')">
+                        </div>
+                    </div>
+                    
+                    <!-- Previous Grade -->
+                    <div class="col-12">
+                        <label for="Previous_Grade" class="form-label d-flex justify-content-between">
+                            <span>Previous Grade</span>
+                            <span class="slider-val-badge" id="val-grade">75%</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" class="form-range-premium" id="Previous_Grade" min="0" max="100" value="75" oninput="updateSliderVal('Previous_Grade', 'grade', '%')">
+                        </div>
+                    </div>
+
+                    <!-- Assignment Completion -->
+                    <div class="col-12">
+                        <label for="Assignment_Completion" class="form-label d-flex justify-content-between">
+                            <span>Assignment Completion</span>
+                            <span class="slider-val-badge" id="val-assign">85%</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" class="form-range-premium" id="Assignment_Completion" min="0" max="100" value="85" oninput="updateSliderVal('Assignment_Completion', 'assign', '%')">
+                        </div>
+                    </div>
+
+                    <!-- Weekly Study Hours -->
+                    <div class="col-12">
+                        <label for="Study_Hours" class="form-label d-flex justify-content-between">
+                            <span>Weekly Study Hours</span>
+                            <span class="slider-val-badge" id="val-hours">12 hrs</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" class="form-range-premium" id="Study_Hours" min="0" max="40" value="12" oninput="updateSliderVal('Study_Hours', 'hours', ' hrs')">
+                        </div>
+                    </div>
+
+                    <!-- Class Participation -->
+                    <div class="col-12">
+                        <label for="Class_Participation" class="form-label d-flex justify-content-between">
+                            <span>Class Participation Score</span>
+                            <span class="slider-val-badge" id="val-part">70%</span>
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" class="form-range-premium" id="Class_Participation" min="0" max="100" value="70" oninput="updateSliderVal('Class_Participation', 'part', '%')">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Additional Indicators -->
+                <h6 class="fw-bold text-secondary mb-3 small text-uppercase">Additional Indicators</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label d-block">Extracurricular Activities</label>
+                        <div class="form-check form-check-inline mt-1">
+                            <input class="form-check-input" type="radio" name="Extra_Activities" id="extra_yes" value="Yes" checked>
+                            <label class="form-check-label text-dark-emphasis" for="extra_yes">Yes</label>
+                        </div>
+                        <div class="form-check form-check-inline mt-1">
+                            <input class="form-check-input" type="radio" name="Extra_Activities" id="extra_no" value="No">
+                            <label class="form-check-label text-dark-emphasis" for="extra_no">No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <button type="submit" class="btn btn-primary btn-lg w-100 py-3 shadow d-flex align-items-center justify-content-center gap-2 text-white fw-bold" id="predictBtn">
+                    <i class="bi bi-cpu"></i> Analyze Student Data
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="col-12 col-lg-5">
+        <!-- Analyzing Ticker Animations (Initially Hidden) -->
+        <div id="loadingIndicator" class="card card-premium border-0 p-4 d-none">
+            <h5 class="fw-bold text-dark-emphasis border-bottom pb-2 mb-3"><i class="bi bi-clock-history text-secondary me-2"></i>Analyzing Student Data...</h5>
+            <div class="d-flex flex-column gap-3 py-3" id="analysisSteps">
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="step-0">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span> Validating inputs
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="step-1">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; padding:0; display:inline-flex; align-items:center; justify-content:center;">2</span> Processing features
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="step-2">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; padding:0; display:inline-flex; align-items:center; justify-content:center;">3</span> Running ML model
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="step-3">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; padding:0; display:inline-flex; align-items:center; justify-content:center;">4</span> Calculating risk
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="step-4">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; padding:0; display:inline-flex; align-items:center; justify-content:center;">5</span> Generating recommendations
+                </div>
+            </div>
+        </div>
+
+        <!-- Initial Placeholder Card -->
+        <div id="welcomeCard" class="card card-premium border-0 p-5 text-center h-100 d-flex flex-column justify-content-center">
+            <i class="bi bi-shield-fill-check text-muted display-3 mb-3" style="opacity: 0.3;"></i>
+            <h5 class="fw-bold text-dark-emphasis mb-2">Prediction Output</h5>
+            <p class="text-secondary small px-3">Adjust student academic indicators and socio factors, then click **Analyze Student Data** to view predicted performance risk levels.</p>
+        </div>
+
+        <!-- Results Display Card (Initially Hidden) -->
+        <div id="resultsCard" class="card card-premium border-0 p-4 d-none mb-4">
+            <h5 class="fw-bold text-dark-emphasis border-bottom pb-2 mb-3">AI PERFORMANCE PREDICTION</h5>
+            <div class="d-flex justify-content-between align-items-center small text-secondary mb-3">
+                <span>Student ID:</span>
+                <strong class="text-dark-emphasis" id="res-student-id">-</strong>
+            </div>
+            
+            <div class="text-center py-4 rounded mb-4" id="res-classification-bg">
+                <span class="text-secondary small d-block mb-1">CLASSIFICATION STATUS</span>
+                <h1 class="fw-extrabold mb-1" id="res-predicted-category" style="font-weight: 800; letter-spacing: 0.5px;">-</h1>
+                <span class="badge fs-7 px-3 py-1.5 shadow-sm" id="res-action-badge">-</span>
+            </div>
+
+            <!-- Confidence Bar -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-secondary small">
+                    <span>Inference Confidence</span>
+                    <strong class="text-dark" id="res-confidence-text">0.0%</strong>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 0%" id="res-confidence-bar"></div>
+                </div>
+            </div>
+
+            <h6 class="small fw-bold text-secondary mb-3">Probability Distribution</h6>
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                    <span class="text-dark-emphasis">High Performance</span>
+                    <strong class="text-dark" id="prob-high-text">0.0%</strong>
+                </div>
+                <div class="progress" style="height: 5px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="prob-high-bar"></div>
+                </div>
+            </div>
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                    <span class="text-dark-emphasis">Average Performance</span>
+                    <strong class="text-dark" id="prob-average-text">0.0%</strong>
+                </div>
+                <div class="progress" style="height: 5px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: 0%" id="prob-average-bar"></div>
+                </div>
+            </div>
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                    <span class="text-dark-emphasis">At-Risk Status</span>
+                    <strong class="text-dark" id="prob-risk-text">0.0%</strong>
+                </div>
+                <div class="progress" style="height: 5px;">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 0%" id="prob-risk-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Card (Initially Hidden) -->
+        <div id="recommendationsCard" class="card card-premium border-0 p-4 d-none">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                <h5 class="fw-bold mb-0 text-dark-emphasis">AI Intervention Plan</h5>
+                <button class="btn btn-xs btn-outline-primary py-1 px-2.5 small" id="btn-intervene-log">
+                    <i class="bi bi-bookmark-plus-fill"></i> Log Intervention
+                </button>
+            </div>
+            <div id="recommendationsList" class="d-flex flex-column gap-3 mb-3">
+                <!-- Injected dynamically -->
+            </div>
+            <p class="text-muted small border-top pt-2.5 mb-0" id="recommendationsDisclaimer" style="font-size: 0.725rem;"></p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Intervention Modal (Shared) -->
+<div class="modal fade" id="addInterventionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-premium border-0">
+            <div class="modal-header modal-header-premium">
+                <h5 class="modal-title fw-bold"><i class="bi bi-bookmark-plus me-2 text-primary"></i>Log New Intervention</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addInterventionForm" onsubmit="submitQuickIntervention(event)">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Student ID</label>
+                        <input type="text" class="form-control bg-light" id="student_id_val" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Support Category</label>
+                        <select class="form-select" id="category_val" required>
+                            <option value="Academic Support" selected>Academic Support (Tutoring)</option>
+                            <option value="Attendance Monitoring">Attendance Monitoring</option>
+                            <option value="Assignment Support">Assignment Support</option>
+                            <option value="Mentoring">Teacher Mentoring</option>
+                            <option value="Study Plan">Structured Study Plan</option>
+                            <option value="Parental Follow-up">Parent/Guardian Follow-up</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Teacher Notes</label>
+                        <textarea class="form-control" id="notes_val" rows="3" placeholder="Notes..."></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status_val" required>
+                                <option value="Pending" selected>Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="follow_up" class="form-label">Follow-up Date</label>
+                            <input type="date" class="form-control" id="follow_up_val">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-premium">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary text-white">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateSliderVal(sliderId, badgeId, suffix = "") {
+        const val = document.getElementById(sliderId).value;
+        document.getElementById(`val-${badgeId}`).textContent = val + suffix;
+    }
+
+    document.getElementById("predictionForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        
+        const form = document.getElementById("predictionForm");
+        if (!form.checkValidity()) {
+            form.classList.add("was-validated");
+            return;
+        }
+
+        const studentId = document.getElementById("Student_ID").value.trim();
+        
+        // Form payload
+        const payload = {
+            Student_ID: studentId,
+            Attendance: parseFloat(document.getElementById("Attendance").value),
+            Study_Hours: parseFloat(document.getElementById("Study_Hours").value),
+            Assignment_Completion: parseFloat(document.getElementById("Assignment_Completion").value),
+            Previous_Grade: parseFloat(document.getElementById("Previous_Grade").value),
+            Class_Participation: parseFloat(document.getElementById("Class_Participation").value),
+            Extra_Activities: document.querySelector('input[name="Extra_Activities"]:checked').value
+        };
+
+        // UI transitions
+        document.getElementById("welcomeCard").classList.add("d-none");
+        document.getElementById("resultsCard").classList.add("d-none");
+        document.getElementById("recommendationsCard").classList.add("d-none");
+        document.getElementById("loadingIndicator").classList.remove("d-none");
+
+        // Reset step animations
+        resetAnalysisSteps();
+
+        // 300ms intervals simulated check list animation
+        animateStep(0, () => {
+            animateStep(1, () => {
+                animateStep(2, () => {
+                    animateStep(3, () => {
+                        animateStep(4, () => {
+                            // Call prediction API
+                            fetch("/api/predict", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                document.getElementById("loadingIndicator").classList.add("d-none");
+                                if (data.success) {
+                                    renderInferenceResults(data.data);
+                                } else {
+                                    document.getElementById("welcomeCard").classList.remove("d-none");
+                                    showToast("Prediction error: " + data.message, "bg-danger");
+                                }
+                            })
+                            .catch(err => {
+                                document.getElementById("loadingIndicator").classList.add("d-none");
+                                document.getElementById("welcomeCard").classList.remove("d-none");
+                                showToast("Server connection error occurred.", "bg-danger");
+                                console.error(err);
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+
+    function resetAnalysisSteps() {
+        for (let i = 0; i < 5; i++) {
+            const el = document.getElementById(`step-${i}`);
+            el.className = "d-flex align-items-center gap-3 small text-secondary";
+            if (i === 0) {
+                el.innerHTML = `<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Validating inputs`;
+            } else {
+                const label = ["Processing features", "Running ML model", "Calculating risk", "Generating recommendations"][i - 1];
+                el.innerHTML = `<span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; padding:0; display:inline-flex; align-items:center; justify-content:center;">${i+1}</span> ${label}`;
+            }
+        }
+    }
+
+    function animateStep(index, callback) {
+        setTimeout(() => {
+            const el = document.getElementById(`step-${index}`);
+            el.className = "d-flex align-items-center gap-3 small text-success fw-bold";
+            el.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-5"></i> ` + el.textContent.trim().replace(/^\d+/, '');
+            
+            // Set spinner on next step
+            if (index < 4) {
+                const nextEl = document.getElementById(`step-${index + 1}`);
+                nextEl.className = "d-flex align-items-center gap-3 small text-primary fw-bold";
+                const nextLabel = nextEl.textContent.trim().replace(/^\d+/, '');
+                nextEl.innerHTML = `<span class="spinner-border spinner-border-sm text-primary" role="status"></span> ${nextLabel}`;
+            }
+            
+            callback();
+        }, 350);
+    }
+
+    function renderInferenceResults(res) {
+        document.getElementById("res-student-id").textContent = res.student_id;
+        document.getElementById("res-predicted-category").textContent = res.prediction.toUpperCase();
+        
+        const confPct = (res.confidence * 100).toFixed(1) + "%";
+        document.getElementById("res-confidence-text").textContent = confPct;
+        document.getElementById("res-confidence-bar").style.width = confPct;
+
+        // Probabilities
+        const hp = (res.probabilities.High * 100).toFixed(1) + "%";
+        const ap = (res.probabilities.Average * 100).toFixed(1) + "%";
+        const rp = (res.probabilities["At-Risk"] * 100).toFixed(1) + "%";
+
+        document.getElementById("prob-high-text").textContent = hp;
+        document.getElementById("prob-high-bar").style.width = hp;
+        document.getElementById("prob-average-text").textContent = ap;
+        document.getElementById("prob-average-bar").style.width = ap;
+        document.getElementById("prob-risk-text").textContent = rp;
+        document.getElementById("prob-risk-bar").style.width = rp;
+
+        // Accent coloring
+        const bg = document.getElementById("res-classification-bg");
+        const badge = document.getElementById("res-action-badge");
+        bg.className = "text-center py-4 rounded mb-4 ";
+        badge.className = "badge fs-7 px-3 py-1.5 shadow-sm ";
+
+        if (res.prediction === "At-Risk") {
+            bg.classList.add("bg-danger-subtle", "text-danger");
+            badge.classList.add("bg-danger");
+            badge.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> Intervention Plan Needed`;
+        } else if (res.prediction === "Average") {
+            bg.classList.add("bg-warning-subtle", "text-warning-dark");
+            badge.classList.add("bg-warning", "text-dark");
+            badge.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> Monitor Progress`;
+        } else {
+            bg.classList.add("bg-success-subtle", "text-success");
+            badge.classList.add("bg-success");
+            badge.innerHTML = `<i class="bi bi-shield-fill-check"></i> Standard Track`;
+        }
+
+        // Recommendations
+        const recList = document.getElementById("recommendationsList");
+        recList.innerHTML = "";
+        res.recommendations.list.forEach((item, index) => {
+            const html = `
+                <div class="p-3 bg-light rounded border-start border-primary border-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong class="text-dark small">${index + 1}. ${item.metric}</strong>
+                        <span class="badge bg-secondary-subtle text-dark-emphasis small">${item.value}</span>
+                    </div>
+                    <p class="mb-2 text-dark small" style="line-height: 1.4;">${item.recommendation}</p>
+                    <div class="text-secondary small" style="font-size: 0.8rem;">
+                        <i class="bi bi-arrow-right-short text-primary"></i> <strong>Next Step:</strong> ${item.action}
+                    </div>
+                </div>
+            `;
+            recList.innerHTML += html;
+        });
+
+        document.getElementById("recommendationsDisclaimer").textContent = res.recommendations.disclaimer;
+        
+        // Link quick log button
+        document.getElementById("btn-intervene-log").onclick = function() {
+            const modal = new bootstrap.Modal(document.getElementById("addInterventionModal"));
+            document.getElementById("student_id_val").value = res.student_id;
+            document.getElementById("notes_val").value = `Initial AI support plan generated based on At-Risk standing. Recommended: ${res.recommendations.list.map(x => x.metric).join(', ')}.`;
+            modal.show();
+        };
+
+        // Display results cards
+        document.getElementById("resultsCard").classList.remove("d-none");
+        document.getElementById("recommendationsCard").classList.remove("d-none");
+        showToast("AI performance analysis completed.", "bg-success");
+    }
+
+    function submitQuickIntervention(event) {
+        event.preventDefault();
+        
+        const payload = {
+            student_id: document.getElementById("student_id_val").value,
+            category: document.getElementById("category_val").value,
+            notes: document.getElementById("notes_val").value,
+            status: document.getElementById("status_val").value,
+            follow_up_date: document.getElementById("follow_up_val").value
+        };
+
+        fetch("/api/interventions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById("addInterventionModal"));
+                modal.hide();
+                showToast("Intervention plan saved successfully!", "bg-success");
+            } else {
+                showToast("Logging failed: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            showToast("Server Connection Error.", "bg-danger");
+            console.error(err);
+        });
+    }
+</script>
+{% endblock %}

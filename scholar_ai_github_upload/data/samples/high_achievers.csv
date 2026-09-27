@@ -1,0 +1,6 @@
+Student_ID,Attendance,Study_Hours,Assignment_Completion,Previous_Grade,Class_Participation,Family_Support,Parental_Education,Internet_Access,Extra_Activities
+S-HIGH-01,98.5,18.0,95.0,92.0,90.0,High,PhD,Yes,Yes
+S-HIGH-02,96.0,16.5,92.0,88.0,85.0,High,Master,Yes,Yes
+S-HIGH-03,97.2,20.0,96.5,95.0,92.0,Medium,Bachelor,Yes,No
+S-HIGH-04,95.0,15.0,90.0,85.0,80.0,High,Associate,Yes,Yes
+S-HIGH-05,99.0,19.5,98.0,94.0,95.0,High,PhD,Yes,Yes

@@ -1,0 +1,6 @@
+Student_ID,Attendance,Study_Hours,Assignment_Completion,Previous_Grade,Class_Participation,Family_Support,Parental_Education,Internet_Access,Extra_Activities
+S-RISK-01,55.0,3.5,45.0,48.0,40.0,Low,High School,No,No
+S-RISK-02,58.5,4.0,50.0,52.0,35.0,Low,High School,Yes,No
+S-RISK-03,62.0,2.5,40.0,45.0,45.0,Medium,High School,No,No
+S-RISK-04,50.5,5.0,55.0,50.0,30.0,Low,Associate,Yes,No
+S-RISK-05,57.0,1.5,35.0,42.0,50.0,Medium,High School,No,No

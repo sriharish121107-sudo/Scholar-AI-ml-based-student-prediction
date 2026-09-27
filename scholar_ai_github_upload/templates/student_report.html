@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scholar AI - Student Report - {{ student.student_id }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            background-color: #ffffff;
+            padding: 30px;
+        }
+        .report-header {
+            border-bottom: 3px double #cbd5e1;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4f46e5;
+        }
+        .value-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+    <div class="container" style="max-width: 800px;">
+        <div class="no-print text-end mb-4">
+            <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print Report</button>
+            <button class="btn btn-outline-secondary" onclick="window.close()">Close Window</button>
+        </div>
+
+        <!-- Header -->
+        <div class="report-header d-flex justify-content-between align-items-end">
+            <div>
+                <h2 class="fw-bold mb-1" style="color: #0f172a;">SCHOLAR AI</h2>
+                <p class="text-secondary small mb-0">Student Performance Predictive Report &bull; Academic Analytics</p>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-dark px-3 py-2 fs-7">STUDENT REPORT</span>
+            </div>
+        </div>
+
+        <!-- Meta Grid -->
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="value-box">
+                    <span class="text-secondary d-block small">Student ID</span>
+                    <strong class="fs-5 text-dark">{{ student.student_id }}</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="value-box">
+                    <span class="text-secondary d-block small">Academic Standing</span>
+                    <strong class="fs-5 {% if student.predicted_category == 'High' %}text-success{% elif student.predicted_category == 'Average' %}text-warning{% else %}text-danger{% endif %}">{{ student.predicted_category | upper }} ({{ "%.1f"|format(student.confidence * 100) }}%)</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="section-title">Academic Indicators</div>
+        <div class="row g-3 text-center">
+            <div class="col-4 col-sm-2.4">
+                <div class="value-box py-2">
+                    <span class="text-secondary d-block" style="font-size: 0.725rem;">Attendance</span>
+                    <strong class="text-dark">{{ "%.1f"|format(student.attendance) }}%</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2.4">
+                <div class="value-box py-2">
+                    <span class="text-secondary d-block" style="font-size: 0.725rem;">Study Hours</span>
+                    <strong class="text-dark">{{ "%.1f"|format(student.study_hours) }}h/wk</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2.4">
+                <div class="value-box py-2">
+                    <span class="text-secondary d-block" style="font-size: 0.725rem;">Assignments</span>
+                    <strong class="text-dark">{{ "%.1f"|format(student.assignment_completion) }}%</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2.4">
+                <div class="value-box py-2">
+                    <span class="text-secondary d-block" style="font-size: 0.725rem;">Previous Grade</span>
+                    <strong class="text-dark">{{ "%.1f"|format(student.previous_grade) }}%</strong>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2.4">
+                <div class="value-box py-2">
+                    <span class="text-secondary d-block" style="font-size: 0.725rem;">Participation</span>
+                    <strong class="text-dark">{{ "%.1f"|format(student.class_participation) }}%</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="section-title">AI Academic Intervention Plan</div>
+        {% if recommendations.list %}
+            <div class="d-flex flex-column gap-2.5">
+                {% for rec in recommendations.list %}
+                    <div class="p-3 bg-light rounded border-start border-primary border-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="small">{{ loop.index }}. {{ rec.metric }}</strong>
+                            <span class="badge bg-secondary-subtle text-dark-emphasis" style="font-size: 0.7rem;">{{ rec.value }}</span>
+                        </div>
+                        <p class="mb-1 text-dark small" style="line-height: 1.45;">{{ rec.recommendation }}</p>
+                        <div class="text-secondary small" style="font-size: 0.775rem;">
+                            <strong>Next Step:</strong> {{ rec.action }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-secondary small">No immediate support indicators triggered. Suggesting enrichment study.</p>
+        {% endif %}
+        
+        <p class="text-muted mt-3" style="font-size: 0.7rem; border-top: 1px solid #f1f5f9; padding-top: 10px;">{{ recommendations.disclaimer }}</p>
+
+        <!-- Stored Interventions -->
+        <div class="section-title">Log of Support Interventions</div>
+        <table class="table table-bordered align-middle small text-center">
+            <thead class="table-light text-secondary">
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Notes</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if interventions %}
+                    {% for item in interventions %}
+                        <tr>
+                            <td>{{ item.created_at[:10] }}</td>
+                            <td><strong>{{ item.category }}</strong></td>
+                            <td class="text-start">{{ item.notes or 'No notes logged.' }}</td>
+                            <td><span class="badge bg-secondary text-dark">{{ item.status }}</span></td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-secondary py-3">No custom interventions logged yet for this student.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Signatures -->
+        <div class="row mt-5 pt-4">
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary mx-auto w-75 pt-2 text-secondary small">
+                    Course Instructor Signature
+                </div>
+            </div>
+            <div class="col-6 text-center">
+                <div class="border-top border-secondary mx-auto w-75 pt-2 text-secondary small">
+                    Academic Advisor Signature
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

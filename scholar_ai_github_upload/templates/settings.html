@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold text-dark">System & Account Settings</h1>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Password Management -->
+    <div class="col-12 col-md-6">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-4 text-dark-emphasis border-bottom pb-2"><i class="bi bi-shield-lock me-2 text-primary"></i>Change Account Password</h5>
+            
+            <form action="{{ url_for('settings') }}" method="POST" class="needs-validation" novalidate>
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="mb-3">
+                    <label for="current_password" class="form-label">Current Password</label>
+                    <input type="password" class="form-control" id="current_password" name="current_password" required placeholder="Enter current password">
+                    <div class="invalid-feedback">Current password is required.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" required placeholder="Enter new password">
+                    <div class="invalid-feedback">New password must be filled.</div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary text-white fw-bold w-100 py-2.5 shadow mt-3">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Dashboard Preferences & System Specs -->
+    <div class="col-12 col-md-6">
+        <div class="card card-premium p-4 border-0 mb-4">
+            <h5 class="fw-bold mb-4 text-dark-emphasis border-bottom pb-2"><i class="bi bi-sliders me-2 text-primary"></i>Visual Preferences</h5>
+            
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong class="d-block text-dark-emphasis small">Dark Mode Configuration</strong>
+                    <span class="text-secondary small">Choose to transition between dark theme or standard mode.</span>
+                </div>
+                <button class="btn btn-outline-secondary theme-toggle-btn border d-flex gap-2 align-items-center">
+                    <i class="bi bi-moon-stars-fill"></i> Switch
+                </button>
+            </div>
+        </div>
+
+        <div class="card card-premium p-4 border-0">
+            <h5 class="fw-bold mb-4 text-dark-emphasis border-bottom pb-2"><i class="bi bi-info-circle me-2 text-primary"></i>AI Engine Metadata</h5>
+            <table class="table table-bordered align-middle small text-dark-emphasis text-center">
+                <tbody>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Model Pipeline</td>
+                        <td>Random Forest (Scikit-Learn)</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">DB Engine</td>
+                        <td>SQLite 3</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Platform Version</td>
+                        <td>Scholar AI 2.0.0 (SaaS Edition)</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">System Time</td>
+                        <td>2026-08-15</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction History - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold text-dark">Academic Prediction History Log</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button class="btn btn-outline-danger d-flex align-items-center gap-2 fw-bold" onclick="clearPredictionLogs()">
+            <i class="bi bi-trash3-fill"></i> Clear History Logs
+        </button>
+    </div>
+</div>
+
+<!-- History Table Card -->
+<div class="card-premium p-4 border-0">
+    <div class="table-responsive-premium">
+        <table class="table table-premium align-middle mb-0 text-center">
+            <thead>
+                <tr>
+                    <th class="text-start ps-4">Prediction Date</th>
+                    <th>Student ID</th>
+                    <th>Attendance %</th>
+                    <th>Study Hours</th>
+                    <th>Assignments %</th>
+                    <th>Previous Grade</th>
+                    <th>Predicted Category</th>
+                    <th>Confidence</th>
+                    <th>Teacher Logged</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if history %}
+                    {% for row in history %}
+                        <tr>
+                            <td class="text-start ps-4 text-secondary small">{{ row.prediction_date[:16] }}</td>
+                            <td class="fw-bold"><a href="{{ url_for('student_profile', student_id=row.student_id) }}" class="text-decoration-none">{{ row.student_id }}</a></td>
+                            <td>{{ "%.1f"|format(row.attendance) }}%</td>
+                            <td>{{ "%.1f"|format(row.study_hours) }} hrs</td>
+                            <td>{{ "%.1f"|format(row.assignment_percentage) }}%</td>
+                            <td>{{ "%.1f"|format(row.previous_grade) }}%</td>
+                            <td>
+                                {% if row.prediction == 'High' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 fs-8 uppercase">High</span>
+                                {% elif row.prediction == 'Average' %}
+                                    <span class="badge bg-warning-subtle text-warning-dark border border-warning-subtle px-2 py-0.5 fs-8 uppercase">Average</span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 fs-8 uppercase">At-Risk</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">{{ "%.1f"|format(row.confidence * 100) }}%</td>
+                            <td class="text-secondary small fw-semibold">{{ row.teacher_name or 'System' }}</td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('student_profile', student_id=row.student_id) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-person-fill"></i> Profile
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-secondary">
+                            <i class="bi bi-clock-history empty-state-icon d-block mb-3"></i>
+                            No predictions have been logged in the history database yet.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function clearPredictionLogs() {
+        if (!confirm("Are you sure you want to delete ALL prediction history logs? This action is irreversible.")) {
+            return;
+        }
+
+        fetch("/api/predictions", {
+            method: "DELETE"
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast("Prediction history cleared successfully.", "bg-success");
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showToast("Clear failed: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            showToast("Server Connection Error.", "bg-danger");
+            console.error(err);
+        });
+    }
+</script>
+{% endblock %}

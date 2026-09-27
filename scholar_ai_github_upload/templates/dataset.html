@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Data Center - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold text-dark">Data Center & Upload Portal</h1>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Upload Dashboard -->
+    <div class="col-12 col-lg-7">
+        <div class="card card-premium p-4 border-0 mb-4">
+            <h5 class="fw-bold mb-3 text-dark-emphasis border-bottom pb-2"><i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Upload Student Dataset</h5>
+            <p class="text-secondary small mb-4">Batch process student records by uploading a CSV. The system will automatically preprocess the data, generate ML classifications using the active Random Forest model, and update student profiles in SQLite.</p>
+            
+            <form id="uploadDatasetForm" onsubmit="uploadDatasetFile(event)">
+                <div class="mb-4">
+                    <label for="csvFile" class="form-label fw-bold">Select CSV Dataset File</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                        <button class="btn btn-primary text-white fw-bold" type="submit"><i class="bi bi-upload"></i> Process Dataset</button>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="bg-light p-3 rounded border small text-secondary">
+                <h6 class="fw-bold text-dark mb-2 small uppercase"><i class="bi bi-info-circle-fill text-primary me-1"></i>Required Column Schema</h6>
+                <p class="mb-2">Your CSV file must include the following headers (case-insensitive):</p>
+                <code>Student_ID, Attendance, Study_Hours, Assignment_Completion, Previous_Grade, Class_Participation, Family_Support, Parental_Education, Internet_Access, Extra_Activities</code>
+            </div>
+        </div>
+
+        <!-- Progress skeleton loader -->
+        <div id="uploadLoader" class="card card-premium p-4 border-0 d-none mb-4">
+            <h5 class="fw-bold text-dark-emphasis border-bottom pb-2 mb-3"><i class="bi bi-clock-history text-secondary me-2"></i>Processing Dataset...</h5>
+            <div class="d-flex flex-column gap-3 py-2">
+                <div class="d-flex align-items-center gap-3 small text-primary fw-bold" id="up-step-0">
+                    <span class="spinner-border spinner-border-sm" role="status"></span> Validating column schema
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="up-step-1">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">2</span> Running Random Forest classifications
+                </div>
+                <div class="d-flex align-items-center gap-3 small text-secondary" id="up-step-2">
+                    <span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">3</span> Logging profiles to SQLite database
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Box -->
+        <div id="uploadResult" class="card card-premium p-4 border-0 d-none">
+            <h5 class="fw-bold text-success border-bottom pb-2 mb-3"><i class="bi bi-check-circle-fill me-2"></i>Dataset Upload Successful</h5>
+            <div class="row g-3 text-center mb-3">
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded shadow-sm">
+                        <span class="text-secondary small d-block mb-1">PROCESSED</span>
+                        <strong class="fs-4 text-dark-emphasis" id="res-total-proc">0</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded shadow-sm">
+                        <span class="text-secondary small d-block mb-1">AT-RISK</span>
+                        <strong class="fs-4 text-danger" id="res-risk-proc">0</strong>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded shadow-sm">
+                        <span class="text-secondary small d-block mb-1">STABLE</span>
+                        <strong class="fs-4 text-success" id="res-stable-proc">0</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{{ url_for('students') }}" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> View Registry</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary text-white"><i class="bi bi-grid-1x2-fill"></i> Open Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Download test collections -->
+    <div class="col-12 col-lg-5">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-4 text-dark-emphasis border-bottom pb-2"><i class="bi bi-download text-primary me-2"></i>Testing Datasets Collections</h5>
+            <p class="text-secondary small mb-4">Download these pre-formatted sample datasets to test batch predictive operations and verify dashboard updates.</p>
+            
+            <div class="d-flex flex-column gap-3">
+                <!-- High Performers -->
+                <div class="p-3 bg-light rounded shadow-sm border border-secondary-subtle d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="d-block text-dark-emphasis small">High Achievers Cohort</strong>
+                        <span class="text-secondary" style="font-size: 0.725rem;">Ideal academic indicators (High Performance predicted)</span>
+                    </div>
+                    <a href="/api/samples/download/high_achievers.csv" class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download"></i> CSV</a>
+                </div>
+
+                <!-- At Risk -->
+                <div class="p-3 bg-light rounded shadow-sm border border-secondary-subtle d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="d-block text-dark-emphasis small">At-Risk Cohort</strong>
+                        <span class="text-secondary" style="font-size: 0.725rem;">Low attendance and study indicators (At-Risk predicted)</span>
+                    </div>
+                    <a href="/api/samples/download/at_risk_cohort.csv" class="btn btn-sm btn-outline-danger fw-bold"><i class="bi bi-download"></i> CSV</a>
+                </div>
+
+                <!-- Mixed Cohort -->
+                <div class="p-3 bg-light rounded shadow-sm border border-secondary-subtle d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="d-block text-dark-emphasis small">Mixed Performance Cohort</strong>
+                        <span class="text-secondary" style="font-size: 0.725rem;">Balanced mix of High, Average, and At-Risk profiles</span>
+                    </div>
+                    <a href="/api/samples/download/mixed_cohort.csv" class="btn btn-sm btn-outline-secondary fw-bold"><i class="bi bi-download"></i> CSV</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function uploadDatasetFile(event) {
+        event.preventDefault();
+        
+        const fileInput = document.getElementById("csvFile");
+        if (fileInput.files.length === 0) return;
+        
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // Hide outcomes, show skeleton loader
+        document.getElementById("uploadResult").classList.add("d-none");
+        document.getElementById("uploadLoader").classList.remove("d-none");
+        resetUploadSteps();
+
+        // 300ms ticks animations
+        animateUploadStep(0, () => {
+            animateUploadStep(1, () => {
+                animateUploadStep(2, () => {
+                    fetch("/api/dataset/upload", {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById("uploadLoader").classList.add("d-none");
+                        if (data.success) {
+                            document.getElementById("res-total-proc").textContent = data.processed;
+                            document.getElementById("res-risk-proc").textContent = data.at_risk;
+                            document.getElementById("res-stable-proc").textContent = data.stable;
+                            
+                            document.getElementById("uploadResult").classList.remove("d-none");
+                            showToast("Dataset processed and predicted successfully!", "bg-success");
+                        } else {
+                            showToast("Upload failed: " + data.message, "bg-danger");
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById("uploadLoader").classList.add("d-none");
+                        showToast("Server Connection Error occurred.", "bg-danger");
+                        console.error(err);
+                    });
+                });
+            });
+        });
+    }
+
+    function resetUploadSteps() {
+        for (let i = 0; i < 3; i++) {
+            const el = document.getElementById(`up-step-${i}`);
+            el.className = "d-flex align-items-center gap-3 small text-secondary";
+            if (i === 0) {
+                el.innerHTML = `<span class="spinner-border spinner-border-sm text-primary" role="status"></span> Validating column schema`;
+            } else {
+                const label = ["Running Random Forest classifications", "Logging profiles to SQLite database"][i - 1];
+                el.innerHTML = `<span class="badge bg-secondary-subtle text-dark" style="width: 18px; height: 18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">${i+1}</span> ${label}`;
+            }
+        }
+    }
+
+    function animateUploadStep(index, callback) {
+        setTimeout(() => {
+            const el = document.getElementById(`up-step-${index}`);
+            el.className = "d-flex align-items-center gap-3 small text-success fw-bold";
+            el.innerHTML = `<i class="bi bi-check-circle-fill text-success fs-5"></i> ` + el.textContent.trim().replace(/^\d+/, '');
+            
+            if (index < 2) {
+                const nextEl = document.getElementById(`up-step-${index + 1}`);
+                nextEl.className = "d-flex align-items-center gap-3 small text-primary fw-bold";
+                const nextLabel = nextEl.textContent.trim().replace(/^\d+/, '');
+                nextEl.innerHTML = `<span class="spinner-border spinner-border-sm text-primary" role="status"></span> ${nextLabel}`;
+            }
+            
+            callback();
+        }, 300);
+    }
+</script>
+{% endblock %}

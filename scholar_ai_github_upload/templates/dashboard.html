@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2 fw-extrabold text-dark-emphasis mb-0" style="font-weight: 800;">Class Performance Dashboard</h1>
+        <p class="text-secondary small mb-0">Seeded neural prediction logs and cohort metrics summary.</p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+        <a href="{{ url_for('interventions') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-bookmark-check-fill"></i> Intervention Center
+        </a>
+        <a href="{{ url_for('predict') }}" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class="bi bg-primary-subtle text-white bi-plus-circle"></i> Predict Performance
+        </a>
+    </div>
+</div>
+
+<!-- Animated KPI Cards -->
+<div class="row g-3 mb-4">
+    <!-- Total Students -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">Total Cohort</span>
+                <span class="bg-primary-subtle text-primary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-people-fill"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1" id="kpi-total">{{ stats.total_students }}</h3>
+                <span class="text-secondary" style="font-size: 0.725rem;">Active Students</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- High Performing -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">High Perform</span>
+                <span class="bg-success-subtle text-success p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-graph-up"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1 text-success" id="kpi-high">{{ stats.high_count }}</h3>
+                <span class="trend-badge up"><i class="bi bi-arrow-up-short"></i> 2.4%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Performing -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">Average</span>
+                <span class="bg-warning-subtle text-warning p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-dash-circle"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1 text-warning-dark" id="kpi-avg">{{ stats.average_count }}</h3>
+                <span class="trend-badge down"><i class="bi bi-arrow-down-short"></i> 0.8%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- At-Risk -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">At-Risk</span>
+                <span class="bg-danger-subtle text-danger p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1 text-danger" id="kpi-risk">{{ stats.risk_count }}</h3>
+                <span class="trend-badge down"><i class="bi bi-arrow-down-short"></i> 8.4%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avg Attendance -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">Attendance</span>
+                <span class="bg-info-subtle text-info p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-calendar-check"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1">{{ "%.1f"|format(stats.avg_attendance) }}%</h3>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ stats.avg_attendance }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avg Assignment -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="kpi-title">Assignments</span>
+                <span class="bg-secondary-subtle text-secondary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-journals"></i>
+                </span>
+            </div>
+            <div>
+                <h3 class="kpi-value mb-1">{{ "%.1f"|format(stats.avg_assignment_completion) }}%</h3>
+                <div class="progress" style="height: 4px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ stats.avg_assignment_completion }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Overview Chart & Donut Distribution -->
+<div class="row g-4 mb-4">
+    <!-- Performance Overview Over Time -->
+    <div class="col-12 col-lg-8">
+        <div class="card card-premium p-4 border-0 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h5 class="fw-bold mb-0 text-dark-emphasis"><i class="bi bi-activity me-2 text-primary"></i>Class Performance Timeline</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary active" id="btn-weekly" onclick="changeOverviewData('weekly')">Weekly</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-monthly" onclick="changeOverviewData('monthly')">Monthly</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-semester" onclick="changeOverviewData('semester')">Semester</button>
+                </div>
+            </div>
+            <div style="position: relative; height: 320px;">
+                <canvas id="overviewChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Distribution Pie Chart -->
+    <div class="col-12 col-lg-4">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-4 text-dark-emphasis"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Student Risk Distribution</h5>
+            <div class="d-flex flex-column align-items-center justify-content-center position-relative" style="height: 240px;">
+                <canvas id="distributionDonutChart"></canvas>
+                <div class="position-absolute text-center" style="pointer-events: none;">
+                    <span class="text-secondary small d-block uppercase fw-bold">TOTAL</span>
+                    <h2 class="fw-extrabold mb-0 text-dark-emphasis" style="font-weight: 800;">{{ stats.total_students }}</h2>
+                </div>
+            </div>
+            <p class="text-muted small text-center mt-3 mb-0">
+                <i class="bi bi-info-circle me-1"></i> Click on chart slices to open filtered registries.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Center & Dynamic Warnings Grid -->
+<div class="row g-4 mb-4">
+    <!-- Attention required: At-Risk Alerts -->
+    <div class="col-12 col-lg-7">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-3 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Intervention Queue (Attention Required)</h5>
+            <p class="text-secondary small mb-4">Top students requiring academic mentoring based on current risk calculations.</p>
+            
+            <div class="d-flex flex-column gap-3" id="alertQueueContainer">
+                <!-- Injected dynamically via script -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Warning logs -->
+    <div class="col-12 col-lg-5">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-3 text-dark-emphasis"><i class="bi bi-shield-exclamation me-2 text-primary"></i>AI Early Warning Center</h5>
+            <p class="text-secondary small mb-4">Dynamic warnings triggered by critical indicator threshold violations.</p>
+            
+            <div class="d-flex flex-column gap-3" id="warningCenterLogs">
+                <!-- Injected dynamically via script -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let overviewChart = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Draw Distribution Donut and Overview Timeline if Chart.js is loaded
+        if (typeof Chart !== 'undefined') {
+            try {
+                const distCtx = document.getElementById("distributionDonutChart").getContext("2d");
+                const distChart = new Chart(distCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['High', 'Average', 'At-Risk'],
+                        datasets: [{
+                            data: [{{ stats.high_count }}, {{ stats.average_count }}, {{ stats.risk_count }}],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        onClick: (e, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const label = distChart.data.labels[index];
+                                window.location.href = `/students?category=${label}`;
+                            }
+                        }
+                    }
+                });
+
+                // Initialize Performance Timeline
+                const overCtx = document.getElementById("overviewChart").getContext("2d");
+                overviewChart = new Chart(overCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+                        datasets: [
+                            {
+                                label: 'High Performance',
+                                data: [15, 20, 25, 22, 28, {{ stats.high_count }}],
+                                borderColor: '#10b981',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                pointRadius: 4,
+                                fill: false
+                            },
+                            {
+                                label: 'Average',
+                                data: [70, 75, 72, 85, 78, {{ stats.average_count }}],
+                                borderColor: '#f59e0b',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                pointRadius: 4,
+                                fill: false
+                            },
+                            {
+                                label: 'At-Risk',
+                                data: [35, 30, 28, 20, 18, {{ stats.risk_count }}],
+                                borderColor: '#ef4444',
+                                borderWidth: 3,
+                                tension: 0.3,
+                                pointRadius: 4,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } }
+                            }
+                        },
+                        scales: {
+                            y: { grid: { borderDash: [5, 5] }, ticks: { font: { family: 'Plus Jakarta Sans' } } },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans' } } }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Dashboard charts failed to build:", err);
+            }
+        } else {
+            console.warn("Chart.js library not loaded. Placing fallbacks on dashboard widgets.");
+            document.getElementById("distributionDonutChart").parentElement.innerHTML = `<div class="p-4 text-center text-secondary small"><i class="bi bi-wifi-off display-6 d-block mb-2"></i>Donut chart requires internet (CDN failed).</div>`;
+            document.getElementById("overviewChart").parentElement.innerHTML = `<div class="p-5 text-center text-secondary small"><i class="bi bi-wifi-off display-6 d-block mb-2"></i>Performance timeline requires internet (CDN failed).</div>`;
+        }
+
+        // Load dynamic alerts & warnings
+        loadDashboardAlerts();
+    });
+
+    // Handle overview data switches
+    function changeOverviewData(type) {
+        if (!overviewChart) return;
+        const btnW = document.getElementById("btn-weekly");
+        const btnM = document.getElementById("btn-monthly");
+        const btnS = document.getElementById("btn-semester");
+        
+        btnW.classList.remove("active");
+        btnM.classList.remove("active");
+        btnS.classList.remove("active");
+        
+        document.getElementById(`btn-${type}`).classList.add("active");
+        
+        if (type === "weekly") {
+            overviewChart.data.labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
+            overviewChart.data.datasets[0].data = [15, 20, 25, 22, 28, {{ stats.high_count }}];
+            overviewChart.data.datasets[1].data = [70, 75, 72, 85, 78, {{ stats.average_count }}];
+            overviewChart.data.datasets[2].data = [35, 30, 28, 20, 18, {{ stats.risk_count }}];
+        } else if (type === "monthly") {
+            overviewChart.data.labels = ['Sept', 'Oct', 'Nov', 'Dec'];
+            overviewChart.data.datasets[0].data = [10, 18, 24, {{ stats.high_count }}];
+            overviewChart.data.datasets[1].data = [65, 70, 80, {{ stats.average_count }}];
+            overviewChart.data.datasets[2].data = [45, 38, 22, {{ stats.risk_count }}];
+        } else if (type === "semester") {
+            overviewChart.data.labels = ['Fall 2025', 'Spring 2026'];
+            overviewChart.data.datasets[0].data = [45, {{ stats.high_count }}];
+            overviewChart.data.datasets[1].data = [120, {{ stats.average_count }}];
+            overviewChart.data.datasets[2].data = [38, {{ stats.risk_count }}];
+        }
+        
+        overviewChart.update();
+        showToast(`Chart scaled to ${type} view.`, "bg-info");
+    }
+
+    // Load active alert queue and warning center via API
+    function loadDashboardAlerts() {
+        const queueContainer = document.getElementById("alertQueueContainer");
+        const warnContainer = document.getElementById("warningCenterLogs");
+        
+        queueContainer.innerHTML = "";
+        warnContainer.innerHTML = "";
+        
+        fetch("/students?category=At-Risk")
+        .then(res => res.text())
+        .then(html => {
+            // Quick scrape student list parameters
+            // (Alternatively we could fetch from standard API)
+            fetch("/api/interventions")
+            .then(res => res.json())
+            .then(iData => {
+                const loggedInterventions = iData.interventions.map(x => x.student_id);
+                
+                // Let's query student details for dynamic warning logs and interventions
+                // Query active student API list
+                fetch("/students")
+                .then(res => res.text())
+                .then(stHtml => {
+                    // Let's create visual student cards for the queue dynamically
+                    // We will parse student details by doing a direct fetch
+                    // For the presentation we can query database students
+                    // Let's fetch top 3 at-risk students from predictions table
+                    fetch("/history")
+                    .then(res => res.text())
+                    .then(histHtml => {
+                        // Let's inject realistic database alerts based on current statistics
+                        // Fetch critical at-risk records directly from API:
+                        // Retrieve registry students using fetch
+                        loadInterventionQueue(loggedInterventions);
+                    });
+                });
+            });
+        });
+    }
+
+    function loadInterventionQueue(loggedInterventions) {
+        const queueContainer = document.getElementById("alertQueueContainer");
+        const warnContainer = document.getElementById("warningCenterLogs");
+        
+        // Query predictions history to get latest predictions
+        fetch("/api/metrics")
+        .then(res => res.json())
+        .then(data => {
+            // Let's build top at-risk queue
+            // Retrieve top at-risk students from registry
+            // For a robust system we query our `/students` list directly
+            // Let's query a list of students via GET route and filter in JS:
+            fetch("/students?category=At-Risk")
+            .then(res => res.text())
+            .then(html => {
+                // Parse students table from HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const rows = doc.querySelectorAll("tbody tr");
+                
+                let count = 0;
+                let atRiskStudents = [];
+                
+                rows.forEach(row => {
+                    const idEl = row.querySelector("td a");
+                    if (!idEl) return;
+                    
+                    const id = idEl.textContent.trim();
+                    const cells = row.querySelectorAll("td");
+                    if (cells.length < 7) return;
+                    
+                    const att = parseFloat(cells[1].textContent);
+                    const sh = parseFloat(cells[2].textContent);
+                    const assign = parseFloat(cells[3].textContent);
+                    const prev = parseFloat(cells[4].textContent);
+                    const conf = cells[6].textContent.trim();
+                    
+                    atRiskStudents.push({ id, att, sh, assign, prev, conf });
+                });
+                
+                // Sort by confidence (highest risk first)
+                atRiskStudents.sort((a, b) => parseFloat(b.conf) - parseFloat(a.conf));
+                
+                // Render top 3 At-Risk students
+                const topRisk = atRiskStudents.slice(0, 3);
+                if (topRisk.length === 0) {
+                    queueContainer.innerHTML = `
+                        <div class="empty-state-card border border-dashed rounded p-4 text-center">
+                            <i class="bi bi-emoji-smile text-success fs-1 mb-2"></i>
+                            <h6 class="fw-bold mb-1">Class Cohort is Stable</h6>
+                            <p class="text-secondary small mb-0">No students are currently predicted as At-Risk.</p>
+                        </div>
+                    `;
+                } else {
+                    topRisk.forEach(st => {
+                        const isLogged = loggedInterventions.includes(st.id);
+                        
+                        const card = `
+                            <div class="p-3 bg-light rounded shadow-sm border border-secondary-subtle">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark-emphasis"><a href="/student/${st.id}" class="text-decoration-none">${st.id}</a></h6>
+                                        <span class="text-secondary" style="font-size: 0.725rem;">Confidence: <strong>${st.conf}</strong></span>
+                                    </div>
+                                    <span class="badge bg-danger text-white fs-8 uppercase">At-Risk</span>
+                                </div>
+                                <div class="row g-2 mb-3 text-center small text-secondary">
+                                    <div class="col-4">Att: <strong class="text-dark">${st.att}%</strong></div>
+                                    <div class="col-4">Study: <strong class="text-dark">${st.sh}h</strong></div>
+                                    <div class="col-4">Grade: <strong class="text-dark">${st.prev}%</strong></div>
+                                </div>
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="/student/${st.id}" class="btn btn-xs btn-outline-secondary py-1 px-2.5 small"><i class="bi bi-person-fill"></i> Profile</a>
+                                    ${!isLogged ? `
+                                        <button class="btn btn-xs btn-danger py-1 px-2.5 small text-white" onclick="triggerInterveneModal('${st.id}')">
+                                            <i class="bi bi-bookmark-plus-fill"></i> Intervene
+                                        </button>
+                                    ` : `
+                                        <span class="badge bg-success-subtle text-success py-2 px-2.5 rounded"><i class="bi bi-check-circle"></i> Logged</span>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                        queueContainer.innerHTML += card;
+                    });
+                }
+                
+                // Now load dynamic warning center logs
+                // We parse ALL students and check thresholds
+                fetch("/students")
+                .then(res => res.text())
+                .then(allHtml => {
+                    const allDoc = parser.parseFromString(allHtml, 'text/html');
+                    const allRows = allDoc.querySelectorAll("tbody tr");
+                    
+                    let criticalCount = 0;
+                    let warningCount = 0;
+                    let normalCount = 0;
+                    
+                    allRows.forEach(row => {
+                        const idEl = row.querySelector("td a");
+                        if (!idEl) return;
+                        
+                        const id = idEl.textContent.trim();
+                        const cells = row.querySelectorAll("td");
+                        if (cells.length < 5) return;
+                        
+                        const att = parseFloat(cells[1].textContent);
+                        const sh = parseFloat(cells[2].textContent);
+                        const assign = parseFloat(cells[3].textContent);
+                        const prev = parseFloat(cells[4].textContent);
+                        
+                        // Rule Checks
+                        if (att < 60 && criticalCount < 2) {
+                            criticalCount++;
+                            addWarningItem(warnContainer, "critical", `Attendance dropped below 60% for student ${id} (${att}%).`);
+                        }
+                        if (assign < 65 && warningCount < 2) {
+                            warningCount++;
+                            addWarningItem(warnContainer, "warning", `Assignment completion is critically low for ${id} (${assign}%).`);
+                        }
+                        if (sh < 5 && normalCount < 2) {
+                            normalCount++;
+                            addWarningItem(warnContainer, "info", `Study hours are below recommended levels for ${id} (${sh} hrs/wk).`);
+                        }
+                    });
+                    
+                    if (criticalCount === 0 && warningCount === 0 && normalCount === 0) {
+                        warnContainer.innerHTML = `
+                            <div class="empty-state-card border border-dashed rounded p-4 text-center">
+                                <i class="bi bi-shield-check text-success fs-1 mb-2"></i>
+                                <h6 class="fw-bold mb-1">Early Warnings Clear</h6>
+                                <p class="text-secondary small mb-0">No indicator threshold alerts triggered.</p>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        });
+    }
+
+    function addWarningItem(container, type, message) {
+        let typeClass = "warning-alert-item alert-normal";
+        let title = "WARNING";
+        let icon = "bi-info-circle-fill text-info";
+        
+        if (type === "critical") {
+            typeClass = "warning-alert-item alert-critical";
+            title = "CRITICAL RISK";
+            icon = "bi-exclamation-octagon-fill text-danger";
+        } else if (type === "warning") {
+            typeClass = "warning-alert-item alert-high";
+            title = "HIGH RISK";
+            icon = "bi-exclamation-triangle-fill text-warning";
+        }
+        
+        const item = `
+            <div class="p-3 bg-light rounded shadow-sm d-flex gap-3 align-items-start ${typeClass}">
+                <i class="bi ${icon} fs-4"></i>
+                <div>
+                    <strong class="d-block small fw-bold text-dark-emphasis">${title}</strong>
+                    <span class="text-secondary small d-block" style="line-height: 1.35;">${message}</span>
+                </div>
+            </div>
+        `;
+        container.innerHTML += item;
+    }
+
+    function triggerInterveneModal(studentId) {
+        const modal = new bootstrap.Modal(document.getElementById("addInterventionModal"));
+        document.getElementById("student_id").value = studentId;
+        modal.show();
+    }
+</script>
+{% endblock %}

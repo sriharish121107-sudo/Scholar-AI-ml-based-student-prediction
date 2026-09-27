@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Model Analytics - Scholar AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold text-dark-emphasis mb-0" style="font-weight: 800;">Machine Learning Model Analytics</h1>
+        <p class="text-secondary small mb-0">Validation parameters and cross-validation summaries of active models.</p>
+    </div>
+    <div>
+        <button class="btn btn-outline-primary d-flex align-items-center gap-2 fw-bold" id="retrainBtn" onclick="triggerModelRetraining()">
+            <i class="bi bi-arrow-repeat"></i> Retrain Model Pipeline
+        </button>
+    </div>
+</div>
+
+<!-- Active Model Statistics -->
+<div class="row g-3 mb-4">
+    <!-- Active Model Card -->
+    <div class="col-12 col-md-6 col-lg-3">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm text-center">
+            <span class="text-secondary small d-block uppercase fw-bold mb-2">ACTIVE CLASSIFIER</span>
+            <div class="bg-primary-subtle text-primary p-3 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; margin: 0 auto;">
+                <i class="bi bi-cpu fs-3"></i>
+            </div>
+            <h5 class="fw-bold mb-1">Random Forest</h5>
+            <span class="badge bg-success-subtle text-success fs-8">Active Champion</span>
+        </div>
+    </div>
+
+    <!-- Accuracy -->
+    <div class="col-6 col-md-3 col-lg-2.25">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between text-center">
+            <span class="kpi-title mb-2">Test Accuracy</span>
+            <h3 class="kpi-value text-primary mb-2" id="val-accuracy">81.5%</h3>
+            <span class="text-secondary small">Out-of-sample score</span>
+        </div>
+    </div>
+
+    <!-- Precision -->
+    <div class="col-6 col-md-3 col-lg-2.25">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between text-center">
+            <span class="kpi-title mb-2">Precision</span>
+            <h3 class="kpi-value text-success mb-2" id="val-precision">81.2%</h3>
+            <span class="text-secondary small">Positive predictive value</span>
+        </div>
+    </div>
+
+    <!-- Recall -->
+    <div class="col-6 col-md-3 col-lg-2.25">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between text-center">
+            <span class="kpi-title mb-2">Recall (Sensitivity)</span>
+            <h3 class="kpi-value text-warning-dark mb-2" id="val-recall">81.5%</h3>
+            <span class="text-secondary small">True positive rate</span>
+        </div>
+    </div>
+
+    <!-- F1 Score -->
+    <div class="col-6 col-md-3 col-lg-2.25">
+        <div class="card card-premium p-3 h-100 border-0 shadow-sm d-flex flex-column justify-content-between text-center">
+            <span class="kpi-title mb-2">F1 Score</span>
+            <h3 class="kpi-value text-danger mb-2" id="val-f1">81.2%</h3>
+            <span class="text-secondary small">Harmonic mean score</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Model Comparison Chart -->
+    <div class="col-12 col-lg-7">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-4 text-dark-emphasis"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Multi-Classifier Performance Comparison</h5>
+            <div style="position: relative; height: 320px;">
+                <canvas id="modelComparisonChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confusion Matrix -->
+    <div class="col-12 col-lg-5">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-3 text-dark-emphasis"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Confusion Matrix (Test Set)</h5>
+            <p class="text-secondary small mb-4">Validation breakdown of actual vs. predicted classes.</p>
+            
+            <div class="row g-2 justify-content-center text-center mt-2" style="max-width: 320px; margin: 0 auto;">
+                <div class="col-3"></div>
+                <div class="col-3 fw-bold small text-secondary">High</div>
+                <div class="col-3 fw-bold small text-secondary">Avg</div>
+                <div class="col-3 fw-bold small text-secondary">Risk</div>
+                
+                <!-- Row High -->
+                <div class="col-3 fw-bold small text-secondary d-flex align-items-center justify-content-end">High</div>
+                <div class="col-3 p-3 bg-success text-white fw-bold rounded border" id="cm-0-0">0</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-0-1">0</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-0-2">0</div>
+
+                <!-- Row Average -->
+                <div class="col-3 fw-bold small text-secondary d-flex align-items-center justify-content-end">Avg</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-1-0">0</div>
+                <div class="col-3 p-3 bg-warning text-dark fw-bold rounded border" id="cm-1-1">0</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-1-2">0</div>
+
+                <!-- Row Risk -->
+                <div class="col-3 fw-bold small text-secondary d-flex align-items-center justify-content-end">Risk</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-2-0">0</div>
+                <div class="col-3 p-3 bg-light text-secondary rounded border" id="cm-2-1">0</div>
+                <div class="col-3 p-3 bg-danger text-white fw-bold rounded border" id="cm-2-2">0</div>
+                
+                <div class="col-12 mt-3 text-secondary small uppercase">Predicted Labels (Columns)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Correlation Heatmap -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-lg-7">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-3 text-dark-emphasis"><i class="bi bi-grid-fill text-primary me-2"></i>Pearson Correlation Matrix</h5>
+            <p class="text-secondary small mb-4">Dynamically computed attribute correlation from raw dataset records.</p>
+            
+            <div id="heatmapContainer" style="overflow-x: auto;">
+                <div class="d-flex flex-column gap-1.5" id="heatmapGrid" style="min-width: 480px;">
+                    <!-- Grid cells injected dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata info -->
+    <div class="col-12 col-lg-5">
+        <div class="card card-premium p-4 border-0 h-100">
+            <h5 class="fw-bold mb-4 text-dark-emphasis"><i class="bi bi-info-circle-fill text-primary me-2"></i>System Parameters & Data Splits</h5>
+            <table class="table table-bordered align-middle small text-center text-dark-emphasis">
+                <tbody>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Data Splits</td>
+                        <td>70% Train | 15% Val | 15% Test</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Train Set Count</td>
+                        <td id="split-train">729 records</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Validation Set Count</td>
+                        <td id="split-val">157 records</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Test Set Count</td>
+                        <td id="split-test">157 records</td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Model Pipeline File</td>
+                        <td><code>model/model.pkl</code></td>
+                    </tr>
+                    <tr>
+                        <td class="text-start text-secondary fw-semibold">Last Trained Date</td>
+                        <td id="val-trained">-</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="bg-light p-3 rounded border mt-3 small text-secondary">
+                <i class="bi bi-lightbulb-fill text-primary me-1"></i>
+                <strong>Note:</strong> Retraining operations reconstruct the datasets automatically with SMOTE balancing, refitting classifiers instantly.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let compChart = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadModelMetrics();
+        loadCorrelationHeatmap();
+    });
+
+    function loadModelMetrics() {
+        fetch("/api/metrics")
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const list = data.metrics;
+                
+                // Find Random Forest Champion
+                const rf = list.find(x => x.model_name === "Random Forest");
+                if (rf) {
+                    document.getElementById("val-accuracy").textContent = (rf.accuracy * 100).toFixed(1) + "%";
+                    document.getElementById("val-precision").textContent = (rf.precision * 100).toFixed(1) + "%";
+                    document.getElementById("val-recall").textContent = (rf.recall * 100).toFixed(1) + "%";
+                    document.getElementById("val-f1").textContent = (rf.f1_score * 100).toFixed(1) + "%";
+                    if (rf.last_trained) {
+                        document.getElementById("val-trained").textContent = rf.last_trained.substring(0, 16);
+                    } else {
+                        document.getElementById("val-trained").textContent = "N/A";
+                    }
+                    
+                    // Render Confusion Matrix
+                    try {
+                        const cm = (typeof rf.confusion_matrix === 'string') ? JSON.parse(rf.confusion_matrix) : rf.confusion_matrix;
+                        document.getElementById("cm-0-0").textContent = cm[0][0];
+                        document.getElementById("cm-0-1").textContent = cm[0][1];
+                        document.getElementById("cm-0-2").textContent = cm[0][2];
+                        document.getElementById("cm-1-0").textContent = cm[1][0];
+                        document.getElementById("cm-1-1").textContent = cm[1][1];
+                        document.getElementById("cm-1-2").textContent = cm[1][2];
+                        document.getElementById("cm-2-0").textContent = cm[2][0];
+                        document.getElementById("cm-2-1").textContent = cm[2][1];
+                        document.getElementById("cm-2-2").textContent = cm[2][2];
+                    } catch(e) {
+                        console.error("Confusion matrix parse error:", e);
+                    }
+                }
+
+                // Render splits
+                if (data.split_info) {
+                    document.getElementById("split-train").textContent = data.split_info.train + " records";
+                    document.getElementById("split-val").textContent = data.split_info.val + " records";
+                    document.getElementById("split-test").textContent = data.split_info.test + " records";
+                }
+
+                // Model comparison Chart.js
+                if (typeof Chart !== 'undefined') {
+                    try {
+                        const labels = list.map(x => x.model_name);
+                        const accs = list.map(x => (x.accuracy * 100).toFixed(1));
+                        const f1s = list.map(x => (x.f1_score * 100).toFixed(1));
+
+                        const compCtx = document.getElementById("modelComparisonChart").getContext("2d");
+                        if (compChart) compChart.destroy();
+                        
+                        compChart = new Chart(compCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: 'Accuracy %',
+                                        data: accs,
+                                        backgroundColor: '#6366f1',
+                                        borderRadius: 6
+                                    },
+                                    {
+                                        label: 'F1 Score %',
+                                        data: f1s,
+                                        backgroundColor: '#8b5cf6',
+                                        borderRadius: 6
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { labels: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } } }
+                                },
+                                scales: {
+                                    y: { max: 100, min: 40, ticks: { font: { family: 'Plus Jakarta Sans' } } },
+                                    x: { ticks: { font: { family: 'Plus Jakarta Sans' } } }
+                                }
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Failed to render comparison chart:", e);
+                    }
+                } else {
+                    console.warn("Chart.js library is not loaded. Rendering HTML/CSS comparison chart.");
+                    let htmlChart = `<div class="d-flex flex-column gap-3 py-2">`;
+                    list.forEach(model => {
+                        const accPct = (model.accuracy * 100).toFixed(1);
+                        const f1Pct = (model.f1_score * 100).toFixed(1);
+                        const isChampion = model.model_name === "Random Forest" ? "🏆 Best Model" : "";
+                        
+                        htmlChart += `
+                            <div>
+                                <div class="d-flex justify-content-between mb-1 small">
+                                    <strong class="text-dark-emphasis">${model.model_name} ${isChampion}</strong>
+                                    <span class="text-secondary" style="font-size:0.775rem;">Accuracy: <strong>${accPct}%</strong> | F1: <strong>${f1Pct}%</strong></span>
+                                </div>
+                                <div class="progress mb-1" style="height: 8px; border-radius: 4px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: ${accPct}%" title="Accuracy"></div>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 3px;">
+                                    <div class="progress-bar" role="progressbar" style="width: ${f1Pct}%; background-color: var(--color-accent) !important;" title="F1-Score"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    htmlChart += `</div>`;
+                    const parent = document.getElementById("modelComparisonChart").parentElement;
+                    parent.innerHTML = htmlChart;
+                }
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function loadCorrelationHeatmap() {
+        const grid = document.getElementById("heatmapGrid");
+        grid.innerHTML = "";
+        
+        fetch("/api/correlation")
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const cols = data.features;
+                const matrix = data.matrix;
+                
+                // Add header row
+                let headerRow = `<div class="d-flex align-items-center gap-1.5"><div style="width: 120px;" class="fw-bold small text-secondary text-end pe-2">Attributes</div>`;
+                cols.forEach(c => {
+                    const shortName = c.substring(0, 8);
+                    headerRow += `<div style="flex:1;" class="fw-bold small text-secondary text-center">${shortName}</div>`;
+                });
+                headerRow += `</div>`;
+                grid.innerHTML += headerRow;
+                
+                // Add cells
+                matrix.forEach((row, i) => {
+                    let htmlRow = `<div class="d-flex align-items-center gap-1.5"><div style="width: 120px;" class="fw-bold small text-secondary text-end pe-2">${cols[i].substring(0, 11)}</div>`;
+                    row.forEach((val, j) => {
+                        // Calculate color weight
+                        // Correlation value is between -1 and 1
+                        const absVal = Math.abs(val);
+                        let bgStyle = "";
+                        
+                        if (val >= 0) {
+                            bgStyle = `background-color: rgba(99, 102, 241, ${absVal}); color: ${absVal > 0.5 ? '#fff' : '#000'};`;
+                        } else {
+                            bgStyle = `background-color: rgba(239, 68, 68, ${absVal}); color: ${absVal > 0.5 ? '#fff' : '#000'};`;
+                        }
+                        
+                        htmlRow += `<div style="flex:1; ${bgStyle}" class="heatmap-cell" title="${cols[i]} to ${cols[j]}: ${val.toFixed(3)}">${val.toFixed(2)}</div>`;
+                    });
+                    htmlRow += `</div>`;
+                    grid.innerHTML += htmlRow;
+                });
+            }
+        })
+        .catch(err => console.error("Correlation load error:", err));
+    }
+
+    function triggerModelRetraining() {
+        const btn = document.getElementById("retrainBtn");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Retraining Pipeline...`;
+        
+        fetch("/api/retrain", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Retrain Model Pipeline`;
+            
+            if (data.success) {
+                showToast("ML models successfully retrained and logged!", "bg-success");
+                loadModelMetrics();
+            } else {
+                showToast("Retraining error: " + data.message, "bg-danger");
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Retrain Model Pipeline`;
+            showToast("Server Connection Error occurred.", "bg-danger");
+            console.error(err);
+        });
+    }
+</script>
+{% endblock %}
